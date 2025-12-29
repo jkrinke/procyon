@@ -80,7 +80,7 @@ procyon/
 
 ### File Headers
 
-All Java source files include an Apache License 2.0 header:
+All Java source files should include an Apache License 2.0 header (replace YYYY with the current year):
 
 ```java
 /*
@@ -161,7 +161,8 @@ The build system automatically extracts this version for all modules.
 ## Important Notes
 
 - Source compatibility is Java 7 to maintain broad compatibility
-- The project uses Gradle 6.9 (though newer Java versions may cause compatibility warnings)
+- The project uses Gradle wrapper (currently configured for Gradle 6.9 - see `gradle/wrapper/gradle-wrapper.properties`)
+- Newer Java versions may cause compatibility warnings with the Gradle version
 - Build artifacts are created in the `build/` directory
 - The decompiler module creates a fat JAR with all dependencies embedded
 - Not all modules have extensive test coverage (e.g., Core has minimal tests)
