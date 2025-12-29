@@ -15,7 +15,7 @@ Procyon is a suite of Java metaprogramming tools focused on code generation and 
 - **Language**: Java (source compatibility: Java 7)
 - **Build Tool**: Gradle (using Gradle wrapper)
 - **Testing Framework**: JUnit 4.13.2
-- **Package Management**: Maven Central (group ID: `org.bitbucket.mstrobel`)
+- **Package Management**: Maven Central (group ID: `com.github.mstrobel`)
 
 ## Build Instructions
 
@@ -176,7 +176,7 @@ The repository uses GitHub Actions:
 - [Wiki - Reflection Framework](https://github.com/mstrobel/procyon/wiki/Reflection-Framework)
 - [Wiki - Expressions Framework](https://github.com/mstrobel/procyon/wiki/Expressions-Framework)
 - [Wiki - Java Decompiler](https://github.com/mstrobel/procyon/wiki/Java-Decompiler)
-- Maven Central: `org.bitbucket.mstrobel`
+- Maven Central: `com.github.mstrobel`
 
 ## Getting Help
 
