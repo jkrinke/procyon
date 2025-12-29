@@ -646,6 +646,41 @@ public final class JavaNameResolver {
 
         @Override
         public Set<Object> visitConstructorDeclaration(final ConstructorDeclaration node, final String name) {
+            Set<Object> results = null;
+
+            if (_mode == NameResolveMode.EXPRESSION) {
+                for (final ParameterDeclaration p : node.getParameters()) {
+                    if (StringUtilities.equals(p.getName(), name)) {
+                        final ParameterDefinition pd = p.getUserData(Keys.PARAMETER_DEFINITION);
+
+                        if (pd == null) {
+                            continue;
+                        }
+
+                        if (results == null) {
+                            results = new LinkedHashSet<>();
+                        }
+
+                        results.add(pd);
+                    }
+                }
+            }
+
+            for (final TypeParameterDeclaration tp : node.getTypeParameters()) {
+                final TypeDefinition gp = tp.getUserData(Keys.TYPE_DEFINITION);
+
+                if (gp != null && StringUtilities.equals(gp.getName(), name)) {
+                    if (results == null) {
+                        results = new LinkedHashSet<>();
+                    }
+                    results.add(gp);
+                }
+            }
+
+            if (results != null) {
+                return results;
+            }
+
             return Collections.emptySet();
         }
 
