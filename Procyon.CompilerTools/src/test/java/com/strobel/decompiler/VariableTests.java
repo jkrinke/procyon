@@ -130,4 +130,33 @@ public class VariableTests extends DecompilerTest {
             "}\n"
         );
     }
+
+    @SuppressWarnings("UnusedDeclaration")
+    private static class B {
+        // Test case for unused variable with string concatenation
+        // This should not produce invalid expression statements
+        public void testUnusedStringConcatenation(char c) {
+            // This variable is never used
+            String row = "" + c + c + c + c;
+            
+            // Do some other work
+            System.out.println("Test");
+        }
+    }
+
+    @Test
+    public void testUnusedVariableWithStringConcatenation() throws Throwable {
+        // The decompiler should handle unused variables with string concatenation
+        // In simple cases like this, it keeps the declaration which is fine
+        verifyOutput(
+            B.class,
+            defaultSettings(),
+            "private static class B {\n" +
+            "    public void testUnusedStringConcatenation(final char c) {\n" +
+            "        final String row = \"\" + c + c + c + c;\n" +
+            "        System.out.println(\"Test\");\n" +
+            "    }\n" +
+            "}\n"
+        );
+    }
 }

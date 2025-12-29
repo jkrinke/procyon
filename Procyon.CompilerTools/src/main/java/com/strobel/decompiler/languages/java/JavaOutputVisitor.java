@@ -969,8 +969,23 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
 
     @Override
     public Void visitExpressionStatement(final ExpressionStatement node, final Void ignored) {
+        final Expression expression = node.getExpression();
+        
+        // Validate that the expression can be a standalone statement in Java
+        if (!isValidExpressionStatement(expression)) {
+            // Invalid expression statement - output as a comment to avoid syntax errors
+            startNode(node);
+            formatter.writeComment(
+                CommentType.MultiLine,
+                " Invalid expression statement removed: " + expression.getClass().getSimpleName() + " "
+            );
+            newLine();
+            endNode(node);
+            return null;
+        }
+        
         startNode(node);
-        node.getExpression().acceptVisitor(this, null);
+        expression.acceptVisitor(this, null);
         semicolon();
         endNode(node);
         return null;
@@ -3026,6 +3041,43 @@ public final class JavaOutputVisitor implements IAstVisitor<Void, Void> {
     @SuppressWarnings("UnusedParameters")
     public static boolean isKeyword(final String identifier, final AstNode context) {
         return ArrayUtilities.contains(KEYWORDS, identifier);
+    }
+
+    /**
+     * Checks if an expression can be a valid standalone expression statement in Java.
+     * According to the Java Language Specification, only certain expressions can be used as statements:
+     * - Assignment expressions
+     * - Pre/post increment/decrement expressions  
+     * - Method invocation expressions
+     * - Class instance creation expressions
+     */
+    private boolean isValidExpressionStatement(final Expression expression) {
+        if (expression == null || expression.isNull()) {
+            return false;
+        }
+        
+        // Check if it's one of the valid expression statement types
+        if (expression instanceof AssignmentExpression) {
+            return true;
+        }
+        if (expression instanceof UnaryOperatorExpression) {
+            final UnaryOperatorExpression unary = (UnaryOperatorExpression) expression;
+            final UnaryOperatorType op = unary.getOperator();
+            return op == UnaryOperatorType.INCREMENT ||
+                   op == UnaryOperatorType.DECREMENT ||
+                   op == UnaryOperatorType.POST_INCREMENT ||
+                   op == UnaryOperatorType.POST_DECREMENT;
+        }
+        if (expression instanceof InvocationExpression) {
+            return true;
+        }
+        if (expression instanceof ObjectCreationExpression) {
+            return true;
+        }
+        
+        // All other expressions (including BinaryOperatorExpression like string concatenation)
+        // are NOT valid as standalone statements
+        return false;
     }
 
     // </editor-fold>
