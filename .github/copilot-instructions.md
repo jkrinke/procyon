@@ -80,7 +80,7 @@ procyon/
 
 ### File Headers
 
-All Java source files should include an Apache License 2.0 header (replace YYYY with the current year):
+All Java source files should include an Apache License 2.0 header. Use this template (replace `FileName.java` with the actual filename and `YYYY` with the current year):
 
 ```java
 /*
