@@ -246,8 +246,19 @@ public class InvokeDynamicRewriter extends AbstractHelperClassTransform {
                 arguments.add(varReference(p));
             }
 
+            // Cast the result of invokeExact() to the expected return type
+            final TypeReference returnType = definition.mdInvoke.getReturnType();
+            Expression returnExpression = invoke;
+
+            // Only cast if the return type is not void and not Object
+            if (returnType != null &&
+                !returnType.isVoid() &&
+                !MetadataResolver.areEquivalent(returnType, BuiltinTypes.Object)) {
+                returnExpression = invoke.cast(makeType(returnType));
+            }
+
             //invocation.cast(callSiteType).invoke(dynamicInvoker).invoke(invokeExact, ArrayUtilities.remove(nodeArguments, 0))
-            tryCatch.setTryBlock(new BlockStatement(new ReturnStatement(invoke)));
+            tryCatch.setTryBlock(new BlockStatement(new ReturnStatement(returnExpression)));
             tryCatch.getCatchClauses().add(cc);
 
             declaration.setBody(new BlockStatement(tryCatch));
