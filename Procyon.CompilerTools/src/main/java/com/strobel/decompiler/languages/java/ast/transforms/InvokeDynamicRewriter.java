@@ -252,7 +252,7 @@ public class InvokeDynamicRewriter extends AbstractHelperClassTransform {
             
             // Only cast if the return type is not void and not Object
             if (returnType != null && 
-                !returnType.getSimpleName().equals("void") && 
+                !returnType.isVoid() && 
                 !returnType.getInternalName().equals("java/lang/Object")) {
                 returnExpression = invoke.cast(makeType(returnType));
             }
