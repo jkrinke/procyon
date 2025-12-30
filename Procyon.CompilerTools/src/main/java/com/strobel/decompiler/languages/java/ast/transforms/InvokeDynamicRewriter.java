@@ -249,10 +249,10 @@ public class InvokeDynamicRewriter extends AbstractHelperClassTransform {
             // Cast the result of invokeExact() to the expected return type
             final TypeReference returnType = definition.mdInvoke.getReturnType();
             Expression returnExpression = invoke;
-            
+
             // Only cast if the return type is not void and not Object
-            if (returnType != null && 
-                !returnType.isVoid() && 
+            if (returnType != null &&
+                !returnType.isVoid() &&
                 !MetadataResolver.areEquivalent(returnType, BuiltinTypes.Object)) {
                 returnExpression = invoke.cast(makeType(returnType));
             }
