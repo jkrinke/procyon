@@ -208,6 +208,33 @@ public class CastTests extends DecompilerTest {
             "}"
         );
     }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static class F {
+        public void test() {
+            java.util.List rawList = new java.util.ArrayList();
+            rawList.add("test");
+            // Cast is required because get() returns Object on a raw List
+            String s = (String) rawList.get(0);
+            System.out.println(s);
+        }
+    }
+
+    @Test
+    public void testRawTypeMethodCallRetainsCast() {
+        verifyOutput(
+            F.class,
+            defaultSettings(),
+            "private static class F {\n" +
+            "    public void test() {\n" +
+            "        final List rawList = new ArrayList();\n" +
+            "        rawList.add(\"test\");\n" +
+            "        final String s = (String)rawList.get(0);\n" +
+            "        System.out.println(s);\n" +
+            "    }\n" +
+            "}"
+        );
+    }
 }
 
 
