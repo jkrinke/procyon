@@ -53,6 +53,48 @@ final class GotoRemoval {
         removeGotosCore(method);
     }
 
+    /**
+     * Checks if a node always exits (i.e., all code paths lead to unconditional control flow).
+     * This includes simple unconditional control flow statements (return, throw, break, continue)
+     * as well as try-catch blocks where both try and all catch blocks exit unconditionally.
+     */
+    private static boolean alwaysExits(final Node node) {
+        if (node == null) {
+            return false;
+        }
+
+        // Check for simple unconditional control flow
+        if (node.isUnconditionalControlFlow()) {
+            return true;
+        }
+
+        // Check for try-catch blocks where all branches exit
+        if (node instanceof TryCatchBlock) {
+            final TryCatchBlock tryCatch = (TryCatchBlock) node;
+            final Block tryBlock = tryCatch.getTryBlock();
+            final List<CatchBlock> catchBlocks = tryCatch.getCatchBlocks();
+
+            // Check if try block exits unconditionally
+            final Node lastInTry = lastOrDefault(tryBlock.getBody());
+            if (lastInTry == null || !alwaysExits(lastInTry)) {
+                return false;
+            }
+
+            // Check if all catch blocks exit unconditionally
+            for (final CatchBlock catchBlock : catchBlocks) {
+                final Node lastInCatch = lastOrDefault(catchBlock.getBody());
+                if (lastInCatch == null || !alwaysExits(lastInCatch)) {
+                    return false;
+                }
+            }
+
+            // If we get here, all branches exit unconditionally
+            return true;
+        }
+
+        return false;
+    }
+
     private void removeGotosCore(final Block method) {
         transformLeaveStatements(method);
 
@@ -860,7 +902,7 @@ final class GotoRemoval {
         }
 
         //
-        // Remove unreachable return/throw statements.
+        // Remove unreachable return/throw/break/continue statements.
         //
 
         boolean modified = false;
@@ -871,9 +913,11 @@ final class GotoRemoval {
             for (int i = 0; i < blockBody.size() - 1; i++) {
                 final Node node = blockBody.get(i);
 
-                if (node.isUnconditionalControlFlow() &&
+                if (alwaysExits(node) &&
                     (match(blockBody.get(i + 1), AstCode.Return) ||
-                     match(blockBody.get(i + 1), AstCode.AThrow))) {
+                     match(blockBody.get(i + 1), AstCode.AThrow) ||
+                     match(blockBody.get(i + 1), AstCode.LoopOrSwitchBreak) ||
+                     match(blockBody.get(i + 1), AstCode.LoopContinue))) {
 
                     modified = true;
                     blockBody.remove(i-- + 1);
