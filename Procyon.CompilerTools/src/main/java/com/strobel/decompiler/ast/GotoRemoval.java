@@ -54,9 +54,20 @@ final class GotoRemoval {
     }
 
     /**
-     * Checks if a node always exits (i.e., all code paths lead to unconditional control flow).
-     * This includes simple unconditional control flow statements (return, throw, break, continue)
-     * as well as try-catch blocks where both try and all catch blocks exit unconditionally.
+     * Checks if a node always exits unconditionally, meaning all code paths through the node
+     * lead to unconditional control flow (return, throw, break, or continue).
+     * <p>
+     * This method handles:
+     * <ul>
+     *   <li>Simple unconditional control flow expressions (return, throw, break, continue)</li>
+     *   <li>Try-catch blocks where the try block and all catch blocks exit unconditionally</li>
+     * </ul>
+     * <p>
+     * This is useful for detecting unreachable code that can be safely removed.
+     *
+     * @param node the node to check for unconditional exit behavior; may be null
+     * @return {@code true} if all code paths through the node exit unconditionally,
+     *         {@code false} otherwise (including when node is null)
      */
     private static boolean alwaysExits(final Node node) {
         if (node == null) {
