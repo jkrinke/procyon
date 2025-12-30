@@ -627,4 +627,55 @@ public class LoopTests extends DecompilerTest {
             "}"
         );
     }
+
+    private static class M {
+        private String next(String[] values, int index) {
+            while (values == null || index >= values.length) {
+                try {
+                    values = getValues();
+                    index = 0;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return values[index];
+        }
+
+        private String[] getValues() {
+            return new String[] { "a", "b", "c" };
+        }
+    }
+
+    @Test
+    public void testWhileLoopWithTryCatchThrow() {
+        verifyOutput(
+            M.class,
+            defaultSettings(),
+            "private static class M\n" +
+            "{\n" +
+            "    private String next(String[] values, int index) {\n" +
+            "        while (true) {\n" +
+            "            if (values != null) {\n" +
+            "                if (index < values.length) {\n" +
+            "                    break;\n" +
+            "                }\n" +
+            "            }\n" +
+            "            try {\n" +
+            "                values = this.getValues();\n" +
+            "                index = 0;\n" +
+            "                continue;\n" +
+            "            }\n" +
+            "            catch (final Exception e) {\n" +
+            "                throw new RuntimeException(e);\n" +
+            "            }\n" +
+            "        }\n" +
+            "        return values[index];\n" +
+            "    }\n" +
+            "    \n" +
+            "    private String[] getValues() {\n" +
+            "        return new String[] { \"a\", \"b\", \"c\" };\n" +
+            "    }\n" +
+            "}\n"
+        );
+    }
 }
