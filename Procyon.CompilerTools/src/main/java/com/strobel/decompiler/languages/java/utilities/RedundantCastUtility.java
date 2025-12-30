@@ -529,6 +529,16 @@ public final class RedundantCastUtility {
                 return;
             }
             
+            //
+            // Check if the cast operand is a method call on a raw type.
+            // If so, the cast may be necessary even if the operand type (Object)
+            // would normally be assignable to the left type via an explicit cast,
+            // because the assignment requires the cast to be present in the source.
+            //
+            if (isRawTypeMethodCall(castOperand)) {
+                return;
+            }
+            
             if (isAssignableFrom(leftType, operandType, false)) {
                 addToResults((CastExpression) r, false);
                 return;
@@ -546,6 +556,33 @@ public final class RedundantCastUtility {
                     addToResults((CastExpression) r, true);
                 }
             }
+        }
+        
+        private boolean isRawTypeMethodCall(final Expression expression) {
+            if (expression == null) {
+                return false;
+            }
+            
+            final Expression expr = removeParentheses(expression);
+            
+            if (!(expr instanceof InvocationExpression)) {
+                return false;
+            }
+            
+            final InvocationExpression invocation = (InvocationExpression) expr;
+            final Expression target = invocation.getTarget();
+            
+            if (target instanceof MemberReferenceExpression) {
+                final MemberReferenceExpression memberRef = (MemberReferenceExpression) target;
+                final Expression targetObject = memberRef.getTarget();
+                final TypeReference targetType = getType(targetObject);
+                
+                if (targetType != null && MetadataHelper.isRawType(targetType)) {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         protected void addToResults(@NotNull final CastExpression cast, final boolean force) {
@@ -814,6 +851,14 @@ public final class RedundantCastUtility {
             TypeReference operandType = getType(operand);
 
             if (castTo == null || operandType == null) {
+                return;
+            }
+            
+            //
+            // Don't remove casts from raw type method calls, as they are necessary
+            // for the code to compile (the method returns Object when called on a raw type).
+            //
+            if (isRawTypeMethodCall(operand)) {
                 return;
             }
 
