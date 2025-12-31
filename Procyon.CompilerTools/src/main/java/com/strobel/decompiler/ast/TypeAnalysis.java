@@ -2007,6 +2007,7 @@ public final class TypeAnalysis {
 
             for (int i = 0; i < typeArguments.size(); i++) {
                 TypeReference t = typeArguments.get(i);
+                final boolean wasGenericParameter = t.isGenericParameter();
 
                 while (t.isWildcardType()) {
                     t = t.hasExtendsBound() ? t.getExtendsBound() : MetadataHelper.getUpperBound(t);
@@ -2054,8 +2055,10 @@ public final class TypeAnalysis {
                     typeArguments.set(i, t);
                 }
                 
-                // Check if we still have an unresolved generic parameter
-                if (isUnresolvedGenericParameter(t)) {
+                // Check if we still have an unresolved generic parameter, or if a generic parameter
+                // was resolved to Object (which means it couldn't be properly inferred)
+                if (isUnresolvedGenericParameter(t) || 
+                    (wasGenericParameter && "java/lang/Object".equals(t.getInternalName()))) {
                     hasUnresolvedParameters = true;
                     break;
                 }
@@ -2112,6 +2115,7 @@ public final class TypeAnalysis {
 
         for (int i = 0; i < typeArguments.size(); i++) {
             TypeReference t = typeArguments.get(i);
+            final boolean wasGenericParameter = t.isGenericParameter();
 
             while (t.isGenericParameter()) {
                 final GenericParameter inScope = _context.getCurrentMethod().findTypeVariable(t.getName());
@@ -2148,8 +2152,10 @@ public final class TypeAnalysis {
                 typeArguments.set(i, t);
             }
             
-            // Check if we still have an unresolved generic parameter
-            if (isUnresolvedGenericParameter(t)) {
+            // Check if we still have an unresolved generic parameter, or if a generic parameter
+            // was resolved to Object (which means it couldn't be properly inferred)
+            if (isUnresolvedGenericParameter(t) || 
+                (wasGenericParameter && "java/lang/Object".equals(t.getInternalName()))) {
                 hasUnresolvedParameters = true;
                 break;
             }
@@ -2789,7 +2795,8 @@ public final class TypeAnalysis {
     }
     
     private TypeReference getRawType(final TypeReference type) {
-        return type.isGenericDefinition() ? type : type.getUnderlyingType();
+        final TypeReference genericDef = type.isGenericDefinition() ? type : type.getUnderlyingType();
+        return genericDef != null ? new RawType(genericDef) : type;
     }
 
     private TypeReference inferTypeForVariable(final Variable v, final TypeReference expectedType) {
