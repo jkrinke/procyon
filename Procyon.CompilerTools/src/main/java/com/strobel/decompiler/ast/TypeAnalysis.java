@@ -2660,7 +2660,20 @@ public final class TypeAnalysis {
                         }
 
                         if (!mappings.containsKey(gp)) {
-                            mappings.put(gp, MetadataHelper.eraseRecursive(gp));
+                            // Check if there's already a mapping for an equivalent generic parameter
+                            boolean hasEquivalentMapping = false;
+                            for (final TypeReference key : mappings.keySet()) {
+                                if (key.isGenericParameter() && 
+                                    key.getName().equals(gp.getName()) &&
+                                    MetadataHelper.isSameType(key.getOwner(), gp.getOwner())) {
+                                    hasEquivalentMapping = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!hasEquivalentMapping) {
+                                mappings.put(gp, MetadataHelper.eraseRecursive(gp));
+                            }
                         }
                     }
 
@@ -2676,7 +2689,20 @@ public final class TypeAnalysis {
 
                     for (final GenericParameter gp : boundMethod.getGenericParameters()) {
                         if (!mappings.containsKey(gp)) {
-                            mappings.put(gp, MetadataHelper.eraseRecursive(gp));
+                            // Check if there's already a mapping for an equivalent generic parameter
+                            boolean hasEquivalentMapping = false;
+                            for (final TypeReference key : mappings.keySet()) {
+                                if (key.isGenericParameter() && 
+                                    key.getName().equals(gp.getName()) &&
+                                    MetadataHelper.isSameType(key.getOwner(), gp.getOwner())) {
+                                    hasEquivalentMapping = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!hasEquivalentMapping) {
+                                mappings.put(gp, MetadataHelper.eraseRecursive(gp));
+                            }
                         }
                     }
 
