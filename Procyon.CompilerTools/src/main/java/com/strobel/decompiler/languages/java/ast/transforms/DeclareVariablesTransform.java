@@ -446,33 +446,12 @@ public class DeclareVariablesTransform implements IAstTransform {
                     analysis.analyze(variableName);
 
                     if (!analysis.getUnassignedVariableUses().isEmpty()) {
-                        //
-                        // There are unassigned uses after this statement. Check if there's an assignment
-                        // statement that follows which assigns to this variable. If so, we should move
-                        // that assignment before the current statement to fix the forward reference.
-                        //
-                        Statement assignmentStatement = findFirstAssignmentAfter(statement, variableName, block);
-                        
-                        if (assignmentStatement != null) {
-                            //
-                            // Move the assignment statement before the current use statement
-                            //
-                            assignmentStatement.remove();
-                            block.getStatements().insertBefore(statement, assignmentStatement);
-                            
-                            //
-                            // Update the declaration point to the moved assignment
-                            //
-                            declarationPoint.set(assignmentStatement);
-                        }
-                        else {
-                            return false;
-                        }
+                        return false;
                     }
                 }
                 
                 //
-                // Also check if the current statement itself uses an unassigned variable.
+                // Check if the current statement itself uses an unassigned variable.
                 // This handles the case where a variable is used before it's assigned
                 // within the same block.
                 //
@@ -482,19 +461,14 @@ public class DeclareVariablesTransform implements IAstTransform {
                 if (!analysis.getUnassignedVariableUses().isEmpty()) {
                     //
                     // The current statement uses the variable before it's assigned.
-                    // Look for an assignment after this statement and move it before.
+                    // Look for an assignment after this statement and use it as the declaration point.
                     //
                     Statement assignmentStatement = findFirstAssignmentAfter(statement, variableName, block);
                     
                     if (assignmentStatement != null) {
                         //
-                        // Move the assignment statement before the current use statement
-                        //
-                        assignmentStatement.remove();
-                        block.getStatements().insertBefore(statement, assignmentStatement);
-                        
-                        //
-                        // Update the declaration point to the moved assignment
+                        // Update the declaration point to the assignment statement.
+                        // This will allow the assignment to be converted to a declaration+initialization.
                         //
                         declarationPoint.set(assignmentStatement);
                     }
