@@ -65,6 +65,44 @@ public class DeclareVariablesTransform implements IAstTransform {
                     }
                 }
                 else {
+                    Statement insertionPoint = v.getInsertionPoint();
+
+                    if (insertionPoint != null && block != null) {
+                        final ExpressionStatement assignmentStatement = findAssignmentStatementAfter(block, insertionPoint, v.getName());
+
+                        if (assignmentStatement != null) {
+                            final AssignmentExpression assignment = (AssignmentExpression) assignmentStatement.getExpression();
+                            final Expression right = assignment.getRight();
+
+                            right.remove();
+
+                            final VariableDeclarationStatement declaration = new VariableDeclarationStatement(
+                                v.getType().clone(),
+                                v.getName(),
+                                right
+                            );
+
+                            if (analysisResult.isSingleAssignment) {
+                                declaration.addModifier(Flags.Flag.FINAL);
+                            }
+
+                            if (variable != null) {
+                                declaration.getVariables().firstOrNullObject().putUserData(Keys.VARIABLE, variable);
+                            }
+
+                            Statement adjustedInsertionPoint = insertionPoint;
+
+                            while (adjustedInsertionPoint.getPreviousSibling() instanceof LabelStatement) {
+                                adjustedInsertionPoint = (Statement) adjustedInsertionPoint.getPreviousSibling();
+                            }
+
+                            block.getStatements().insertBefore(adjustedInsertionPoint, declaration);
+                            assignmentStatement.remove();
+
+                            continue;
+                        }
+                    }
+
                     final VariableDeclarationStatement declaration = new VariableDeclarationStatement(v.getType().clone(), v.getName());
 
                     if (variable != null) {
@@ -79,8 +117,6 @@ public class DeclareVariablesTransform implements IAstTransform {
                             AstBuilder.makeDefaultValue(variable.getType())
                         );
                     }
-
-                    Statement insertionPoint = v.getInsertionPoint();
 
                     while (insertionPoint.getPreviousSibling() instanceof LabelStatement) {
                         insertionPoint = (Statement) insertionPoint.getPreviousSibling();
@@ -683,6 +719,51 @@ public class DeclareVariablesTransform implements IAstTransform {
         }
 
         return false;
+    }
+
+    private static ExpressionStatement findAssignmentStatementAfter(
+        final BlockStatement block,
+        final Statement start,
+        final String variableName) {
+
+        boolean afterStart = false;
+
+        for (final Statement statement : block.getStatements()) {
+            if (!afterStart) {
+                if (statement == start) {
+                    afterStart = true;
+                }
+
+                continue;
+            }
+
+            final AssignmentExpression assignment = getSimpleAssignment(statement, variableName);
+
+            if (assignment != null) {
+                return (ExpressionStatement) statement;
+            }
+        }
+
+        return null;
+    }
+
+    private static AssignmentExpression getSimpleAssignment(final Statement statement, final String variableName) {
+        if (statement instanceof ExpressionStatement) {
+            final Expression expression = ((ExpressionStatement) statement).getExpression();
+
+            if (expression instanceof AssignmentExpression) {
+                final AssignmentExpression assignment = (AssignmentExpression) expression;
+
+                if (assignment.getOperator() == AssignmentOperatorType.ASSIGN &&
+                    assignment.getLeft() instanceof IdentifierExpression &&
+                    StringUtilities.equals(((IdentifierExpression) assignment.getLeft()).getIdentifier(), variableName)) {
+
+                    return assignment;
+                }
+            }
+        }
+
+        return null;
     }
 
     private static boolean canRedeclareVariable(
