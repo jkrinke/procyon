@@ -2661,13 +2661,17 @@ public final class TypeAnalysis {
 
                         if (!mappings.containsKey(gp)) {
                             // Check if there's already a mapping for an equivalent generic parameter
+                            // by checking if any existing key has the same name and owner
                             boolean hasEquivalentMapping = false;
                             for (final TypeReference key : mappings.keySet()) {
-                                if (key.isGenericParameter() && 
-                                    key.getName().equals(gp.getName()) &&
-                                    MetadataHelper.isSameType(key.getOwner(), gp.getOwner())) {
-                                    hasEquivalentMapping = true;
-                                    break;
+                                if (key.isGenericParameter()) {
+                                    final GenericParameter keyParam = (GenericParameter) key;
+                                    // Check if names match and owners are the same object
+                                    if (keyParam.getName().equals(gp.getName()) &&
+                                        keyParam.getOwner() == gp.getOwner()) {
+                                        hasEquivalentMapping = true;
+                                        break;
+                                    }
                                 }
                             }
                             
@@ -2690,13 +2694,17 @@ public final class TypeAnalysis {
                     for (final GenericParameter gp : boundMethod.getGenericParameters()) {
                         if (!mappings.containsKey(gp)) {
                             // Check if there's already a mapping for an equivalent generic parameter
+                            // by checking if any existing key has the same name and owner
                             boolean hasEquivalentMapping = false;
                             for (final TypeReference key : mappings.keySet()) {
-                                if (key.isGenericParameter() && 
-                                    key.getName().equals(gp.getName()) &&
-                                    MetadataHelper.isSameType(key.getOwner(), gp.getOwner())) {
-                                    hasEquivalentMapping = true;
-                                    break;
+                                if (key.isGenericParameter()) {
+                                    final GenericParameter keyParam = (GenericParameter) key;
+                                    // Check if names match and owners are the same object
+                                    if (keyParam.getName().equals(gp.getName()) &&
+                                        keyParam.getOwner() == gp.getOwner()) {
+                                        hasEquivalentMapping = true;
+                                        break;
+                                    }
                                 }
                             }
                             
