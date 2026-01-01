@@ -446,6 +446,59 @@ public class DeclareVariablesTransform implements IAstTransform {
                     analysis.analyze(variableName);
 
                     if (!analysis.getUnassignedVariableUses().isEmpty()) {
+                        //
+                        // There are unassigned uses after this statement. Check if there's an assignment
+                        // statement that follows which assigns to this variable. If so, we should move
+                        // that assignment before the current statement to fix the forward reference.
+                        //
+                        Statement assignmentStatement = findFirstAssignmentAfter(statement, variableName, block);
+                        
+                        if (assignmentStatement != null) {
+                            //
+                            // Move the assignment statement before the current use statement
+                            //
+                            assignmentStatement.remove();
+                            block.getStatements().insertBefore(statement, assignmentStatement);
+                            
+                            //
+                            // Update the declaration point to the moved assignment
+                            //
+                            declarationPoint.set(assignmentStatement);
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                }
+                
+                //
+                // Also check if the current statement itself uses an unassigned variable.
+                // This handles the case where a variable is used before it's assigned
+                // within the same block.
+                //
+                analysis.setAnalyzedRange(statement, block);
+                analysis.analyze(variableName);
+                
+                if (!analysis.getUnassignedVariableUses().isEmpty()) {
+                    //
+                    // The current statement uses the variable before it's assigned.
+                    // Look for an assignment after this statement and move it before.
+                    //
+                    Statement assignmentStatement = findFirstAssignmentAfter(statement, variableName, block);
+                    
+                    if (assignmentStatement != null) {
+                        //
+                        // Move the assignment statement before the current use statement
+                        //
+                        assignmentStatement.remove();
+                        block.getStatements().insertBefore(statement, assignmentStatement);
+                        
+                        //
+                        // Update the declaration point to the moved assignment
+                        //
+                        declarationPoint.set(assignmentStatement);
+                    }
+                    else {
                         return false;
                     }
                 }
@@ -683,6 +736,49 @@ public class DeclareVariablesTransform implements IAstTransform {
         }
 
         return false;
+    }
+
+    private static Statement findFirstAssignmentAfter(
+        final Statement startStatement,
+        final String variableName,
+        final BlockStatement block) {
+        
+        //
+        // Find the first statement after startStatement that assigns to the variable
+        //
+        boolean foundStart = false;
+        
+        for (final Statement statement : block.getStatements()) {
+            if (!foundStart) {
+                if (statement == startStatement) {
+                    foundStart = true;
+                }
+                continue;
+            }
+            
+            //
+            // Check if this statement is an assignment to the variable
+            //
+            if (statement instanceof ExpressionStatement) {
+                final Expression expression = ((ExpressionStatement) statement).getExpression();
+                
+                if (expression instanceof AssignmentExpression) {
+                    final AssignmentExpression assignment = (AssignmentExpression) expression;
+                    
+                    if (assignment.getOperator() == AssignmentOperatorType.ASSIGN &&
+                        assignment.getLeft() instanceof IdentifierExpression) {
+                        
+                        final IdentifierExpression identifier = (IdentifierExpression) assignment.getLeft();
+                        
+                        if (StringUtilities.equals(identifier.getIdentifier(), variableName)) {
+                            return statement;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return null;
     }
 
     private static boolean canRedeclareVariable(
