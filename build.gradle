@@ -42,7 +42,17 @@ allprojects {
     version procyonVersion
 
     group 'com.github.mstrobel'
-    sourceCompatibility = 1.7    // JDK version
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(11)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = '1.7'
+        targetCompatibility = '1.7'
+    }
 
     repositories {
         mavenCentral()
