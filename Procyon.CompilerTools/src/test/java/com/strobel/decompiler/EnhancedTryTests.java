@@ -16,7 +16,11 @@ package com.strobel.decompiler;
 import com.strobel.assembler.metadata.CompilerTarget;
 import org.junit.Test;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.StringWriter;
 
 @SuppressWarnings("ALL")
@@ -137,6 +141,30 @@ public class EnhancedTryTests extends DecompilerTest {
         public void test() throws IOException {
             try (final StringWriter writer1 = new StringWriter();
                  final StringWriter writer2 = new StringWriter()) {
+            }
+        }
+    }
+
+    private static final class L {
+        private static BufferedReader reader;
+        private static PrintStream output;
+        private static boolean flag;
+
+        public static void test() throws Throwable {
+            try (final BufferedReader bufferedReader = L.reader = new BufferedReader(new FileReader("in"))) {
+                PrintStream out;
+                PrintStream printStream;
+                if (L.flag) {
+                    printStream = (out = System.out);
+                }
+                else {
+                    final File file = new File("out");
+                    printStream = (out = new PrintStream(file));
+                }
+                L.output = out;
+                try (final PrintStream printStream2 = printStream) {
+                    L.reader.readLine();
+                }
             }
         }
     }
@@ -337,6 +365,37 @@ public class EnhancedTryTests extends DecompilerTest {
             "    public void test() throws IOException {\n" +
             "        try (final StringWriter writer1 = new StringWriter();\n" +
             "             final StringWriter writer2 = new StringWriter()) {}\n" +
+            "    }\n" +
+            "}\n"
+        );
+    }
+
+    @Test
+    public void testResourceAssignmentOrdering() throws Throwable {
+        verifyOutput(
+            L.class,
+            defaultSettings(),
+            "private static final class L {\n" +
+            "    private static BufferedReader reader;\n" +
+            "    private static PrintStream output;\n" +
+            "    private static boolean flag;\n" +
+            "    \n" +
+            "    public static void test() throws Throwable {\n" +
+            "        try (final BufferedReader bufferedReader = L.reader = new BufferedReader(new FileReader(\"in\"))) {\n" +
+            "            PrintStream printStream;\n" +
+            "            PrintStream out;\n" +
+            "            if (L.flag) {\n" +
+            "                out = (printStream = System.out);\n" +
+            "            }\n" +
+            "            else {\n" +
+            "                final File file = new File(\"out\");\n" +
+            "                out = (printStream = new PrintStream(file));\n" +
+            "            }\n" +
+            "            L.output = out;\n" +
+            "            try (final PrintStream printStream2 = printStream) {\n" +
+            "                L.reader.readLine();\n" +
+            "            }\n" +
+            "        }\n" +
             "    }\n" +
             "}\n"
         );
