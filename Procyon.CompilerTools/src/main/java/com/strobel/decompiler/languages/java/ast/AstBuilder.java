@@ -235,6 +235,18 @@ public final class AstBuilder {
         if (type == null) {
             return AstType.NULL;
         }
+        
+        // Handle raw types - they should not have type arguments added
+        if (type instanceof RawType) {
+            final RawType rawType = (RawType) type;
+            // Convert the underlying type without type arguments by temporarily disabling includeTypeArguments
+            final ConvertTypeOptions rawOptions = new ConvertTypeOptions();
+            rawOptions.setIncludePackage(options != null && options.getIncludePackage());
+            rawOptions.setIncludeTypeArguments(false); // This is the key - don't add type arguments for raw types
+            rawOptions.setIncludeTypeParameterDefinitions(options == null || options.getIncludeTypeParameterDefinitions());
+            rawOptions.setAddImports(options == null || options.getAddImports());
+            return convertType(rawType.getUnderlyingType(), typeIndex, rawOptions);
+        }
 
         if (type instanceof ICompoundType) {
             final ICompoundType cType = (ICompoundType) type;

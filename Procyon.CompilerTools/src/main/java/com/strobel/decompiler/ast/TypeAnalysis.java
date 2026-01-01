@@ -1517,6 +1517,21 @@ public final class TypeAnalysis {
                         if (inferredType != null &&
                             MetadataHelper.isBytecodeCastAssignable(inferredType, castType) &&
                             MetadataHelper.isAssignableFrom(expectedType, inferredType)) {
+                            
+                            // Check if inferredType has unresolved generic parameters
+                            if (inferredType instanceof IGenericInstance) {
+                                boolean hasUnresolvedParams = false;
+                                for (final TypeReference typeArg : ((IGenericInstance) inferredType).getTypeArguments()) {
+                                    if (isUnresolvedGenericParameter(typeArg)) {
+                                        hasUnresolvedParams = true;
+                                        break;
+                                    }
+                                }
+                                if (hasUnresolvedParams) {
+                                    // Use the raw type instead
+                                    inferredType = getRawType(inferredType);
+                                }
+                            }
 
                             expression.setOperand(inferredType);
                             return inferredType;
@@ -1987,10 +2002,12 @@ public final class TypeAnalysis {
 
         if (inferredType instanceof IGenericInstance) {
             boolean typeArgumentsChanged = false;
+            boolean hasUnresolvedParameters = false;
             List<TypeReference> typeArguments = ((IGenericInstance) inferredType).getTypeArguments();
 
             for (int i = 0; i < typeArguments.size(); i++) {
                 TypeReference t = typeArguments.get(i);
+                final boolean wasGenericParameter = t.isGenericParameter();
 
                 while (t.isWildcardType()) {
                     t = t.hasExtendsBound() ? t.getExtendsBound() : MetadataHelper.getUpperBound(t);
@@ -2037,6 +2054,19 @@ public final class TypeAnalysis {
 
                     typeArguments.set(i, t);
                 }
+                
+                // Check if we still have an unresolved generic parameter, or if a generic parameter
+                // was resolved to Object (which means it couldn't be properly inferred)
+                if (isUnresolvedGenericParameter(t) || 
+                    (wasGenericParameter && "java/lang/Object".equals(t.getInternalName()))) {
+                    hasUnresolvedParameters = true;
+                    break;
+                }
+            }
+            
+            // If we have unresolved generic parameters, use the raw type instead
+            if (hasUnresolvedParameters) {
+                return getRawType(inferredType);
             }
 
             expression.putUserData(AstKeys.TYPE_ARGUMENTS, typeArguments);
@@ -2050,6 +2080,17 @@ public final class TypeAnalysis {
     }
 
     private TypeReference cleanTypeArguments(final TypeReference newType, final TypeReference alternateType) {
+        // First, check if newType already has unresolved generic parameters
+        if (newType instanceof IGenericInstance) {
+            final List<TypeReference> newTypeArgs = ((IGenericInstance) newType).getTypeArguments();
+            for (final TypeReference typeArg : newTypeArgs) {
+                if (isUnresolvedGenericParameter(typeArg)) {
+                    // Return the raw type instead
+                    return getRawType(newType);
+                }
+            }
+        }
+        
         if (!(alternateType instanceof IGenericInstance)) {
             return newType;
         }
@@ -2061,6 +2102,7 @@ public final class TypeAnalysis {
         final List<TypeReference> alternateTypeArguments = ((IGenericInstance) alternateType).getTypeArguments();
 
         boolean typeArgumentsChanged = false;
+        boolean hasUnresolvedParameters = false;
         List<TypeReference> typeArguments;
 
         if (newType instanceof IGenericInstance) {
@@ -2073,6 +2115,7 @@ public final class TypeAnalysis {
 
         for (int i = 0; i < typeArguments.size(); i++) {
             TypeReference t = typeArguments.get(i);
+            final boolean wasGenericParameter = t.isGenericParameter();
 
             while (t.isGenericParameter()) {
                 final GenericParameter inScope = _context.getCurrentMethod().findTypeVariable(t.getName());
@@ -2108,6 +2151,19 @@ public final class TypeAnalysis {
 
                 typeArguments.set(i, t);
             }
+            
+            // Check if we still have an unresolved generic parameter, or if a generic parameter
+            // was resolved to Object (which means it couldn't be properly inferred)
+            if (isUnresolvedGenericParameter(t) || 
+                (wasGenericParameter && "java/lang/Object".equals(t.getInternalName()))) {
+                hasUnresolvedParameters = true;
+                break;
+            }
+        }
+        
+        // If we have unresolved generic parameters, return the raw type instead
+        if (hasUnresolvedParameters) {
+            return getRawType(newType);
         }
 
         if (typeArgumentsChanged) {
@@ -2728,6 +2784,19 @@ public final class TypeAnalysis {
         }
 
         return boundMethod.getReturnType();
+    }
+    
+    private boolean isUnresolvedGenericParameter(final TypeReference t) {
+        if (!t.isGenericParameter()) {
+            return false;
+        }
+        final GenericParameter inScope = _context.getCurrentMethod().findTypeVariable(t.getName());
+        return inScope == null || !MetadataHelper.isSameType(t, inScope);
+    }
+    
+    private TypeReference getRawType(final TypeReference type) {
+        final TypeReference genericDef = type.isGenericDefinition() ? type : type.getUnderlyingType();
+        return genericDef != null ? new RawType(genericDef) : type;
     }
 
     private TypeReference inferTypeForVariable(final Variable v, final TypeReference expectedType) {
