@@ -9,6 +9,7 @@ out/
 .gradle/
 *.iml
 *.class
+!**/test/resources/*.class
 build/
 cache.txt
 /.classpath
