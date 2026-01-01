@@ -123,6 +123,41 @@ The Compiler Toolset is still early in development and subject to change.
 `procyon-compilertools`.  All dependencies are embedded in the JAR for easy redistribution.
 For more information about the decompiler, see the [Java Decompiler](https://github.com/mstrobel/procyon/wiki/Java-Decompiler) wiki page.
 
+## Building Procyon
+
+### Requirements
+
+- **Java 11**: The project is configured to use Java 11 for compilation via Gradle toolchains
+- **Gradle 6.9.4**: The Gradle wrapper is configured to use version 6.9.4
+
+### Build Commands
+
+Build the entire project:
+```bash
+./gradlew build
+```
+
+Build without javadoc generation (useful to avoid javadoc warnings):
+```bash
+./gradlew build -x javadoc -x javadocJar
+```
+
+Run tests:
+```bash
+./gradlew test
+```
+
+Clean and rebuild:
+```bash
+./gradlew clean build
+```
+
+### Notes
+
+- The project maintains Java 7 source and target compatibility for broad runtime support
+- Java 11 is used during the build process through Gradle toolchains
+- The Gradle wrapper will automatically download Gradle 6.9.4 if not already present
+
 ## Powered by Procyon
 
 Check out these third party products based on Procyon!  Are you using Procyon in one of your projects?  Contact me ([email](mailto:mike.strobel@gmail.com) / [twitter](https://twitter.com/mstrobel)) if you would like it listed here. 
