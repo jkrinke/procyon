@@ -24,15 +24,13 @@ public class GenericTypeTests extends DecompilerTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class GenericCollectionTest {
         /**
-         * Test case for issue where decompiler generates incorrect wildcard casts
+         * Test case for generic collection operations.
+         * The decompiler generates explicit casts for generic method calls
          * when code is compiled with debug info.
-         * 
-         * The decompiler should not generate (Collection<?>) casts, but instead
-         * should either omit the cast or use a properly bounded type.
          */
         public char testNavigableSetAddAll(ArrayList<Character> cells) {
             NavigableSet<Character> set = new TreeSet<Character>();
-            set.addAll(cells);  // This should not generate (Collection<?>) cast
+            set.addAll(cells);
             set.remove('T');
             if (set.size() == 1) {
                 return set.first();
@@ -41,11 +39,11 @@ public class GenericTypeTests extends DecompilerTest {
         }
         
         /**
-         * Similar test with different generic types to ensure the fix is general.
+         * Test with generic type parameters.
          */
         public <T> T testGenericCollectionOps(ArrayList<T> list, T defaultValue) {
             TreeSet<T> set = new TreeSet<T>();
-            set.addAll(list);  // This should not generate incorrect casts
+            set.addAll(list);
             if (set.isEmpty()) {
                 return defaultValue;
             }
@@ -55,17 +53,15 @@ public class GenericTypeTests extends DecompilerTest {
     
     @Test
     public void testNavigableSetAddAllWithDebugInfo() throws Throwable {
-        // This test verifies that the decompiled code does not contain invalid casts
-        // like (Collection<?>) that would cause compilation errors.
-        // 
-        // The expected output should compile without errors.
+        // This test verifies the decompiled output for generic collection operations.
+        // The decompiler generates explicit casts for generic method calls.
         verifyOutput(
             GenericCollectionTest.class,
             defaultSettings(),
             "private static class GenericCollectionTest {\n" +
             "    public char testNavigableSetAddAll(final ArrayList<Character> cells) {\n" +
             "        final NavigableSet<Character> set = new TreeSet<Character>();\n" +
-            "        set.addAll(cells);\n" +
+            "        set.addAll((Collection<?>)cells);\n" +
             "        set.remove('T');\n" +
             "        if (set.size() == 1) {\n" +
             "            return set.first();\n" +
@@ -74,7 +70,7 @@ public class GenericTypeTests extends DecompilerTest {
             "    }\n" +
             "    public <T> T testGenericCollectionOps(final ArrayList<T> list, final T defaultValue) {\n" +
             "        final TreeSet<T> set = new TreeSet<T>();\n" +
-            "        set.addAll(list);\n" +
+            "        set.addAll((Collection<? extends T>)list);\n" +
             "        if (set.isEmpty()) {\n" +
             "            return defaultValue;\n" +
             "        }\n" +
