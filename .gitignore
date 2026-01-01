@@ -8,6 +8,7 @@ out/
 .idea/
 .gradle/
 *.iml
+*.class
 build/
 cache.txt
 /.classpath
