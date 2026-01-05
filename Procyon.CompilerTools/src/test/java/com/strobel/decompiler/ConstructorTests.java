@@ -190,4 +190,28 @@ public class ConstructorTests extends DecompilerTest {
             "}\n"
         );
     }
+
+    private static class F {
+        static Object field;
+
+        static class Inner {
+            public Inner(Object field) {
+                // Parameter 'field' should shadow the static field 'F.field'
+                Object local = field;
+            }
+        }
+    }
+
+    @Test
+    public void testConstructorParameterShadowsField() throws Exception {
+        verifyOutput(
+            F.Inner.class,
+            defaultSettings(),
+            "static class Inner {\n" +
+            "    public Inner(final Object field) {\n" +
+            "        final Object local = field;\n" +
+            "    }\n" +
+            "}\n"
+        );
+    }
 }
